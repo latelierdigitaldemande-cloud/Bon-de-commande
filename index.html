@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bon de commande - Mes Delices d'Allemagne</title>
+<style>
+  :root { --bg:#f6f1ea; --card:#fff; --ink:#1d1511; --muted:#7a6d63; --line:#e4d9cc; --accent:#9c5a28;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#181310; --card:#241d18; --ink:#f3ece4; --muted:#a89a8d; --line:#3a2f27; --accent:#e0a064; } }
+  :root[data-theme="dark"] { --bg:#181310; --card:#241d18; --ink:#f3ece4; --muted:#a89a8d; --line:#3a2f27; --accent:#e0a064; }
+  * { box-sizing:border-box; touch-action:manipulation; }
+  html { color-scheme: light dark; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Helvetica Neue",Arial,sans-serif; line-height:1.45; }
+  .wrap { width:min(760px,100% - 32px); margin:0 auto; padding:20px 0 40px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 16px; font-size:15px; }
+  textarea, input { width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); font:inherit; font-size:16px; }
+  textarea { min-height:170px; resize:vertical; }
+  .row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; margin:12px 0; }
+  label { min-width:0; display:block; }
+  input[type=date] { min-width:0; max-width:100%; -webkit-appearance:none; appearance:none; text-align:left; }
+  label span { display:block; font-size:13px; color:var(--muted); margin-bottom:4px; }
+  .btns { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 20px; }
+  button { padding:13px 20px; border:0; border-radius:999px; font:inherit; font-weight:700; cursor:pointer; background:var(--accent); color:#fff; }
+  button.alt { background:transparent; color:var(--ink); border:1.5px solid var(--line); }
+  .err { color:#b3261e; margin:8px 0 0; min-height:1.4em; font-size:14px; }
+
+  /* Le bon reste blanc comme une feuille papier */
+  .bon { background:#fff; color:#222; border-radius:12px; padding:28px 24px; border:1px solid var(--line); overflow-x:auto; }
+  .bon .head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .bon .shop b { display:block; font-size:18px; }
+  .bon .shop small { color:#666; }
+  .bon .logo { height:64px; width:auto; }
+  .bon .title { font-size:22px; letter-spacing:.02em; text-align:right; }
+  .bon .meta { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin:24px 0; font-size:14px; }
+  .bon .meta h4 { margin:0 0 6px; font-size:13px; }
+  .bon .meta dl { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; margin:0; }
+  .bon .meta dt { font-weight:700; font-size:13px; }
+  .bon .meta dd { margin:0; }
+  .bon table { width:100%; border-collapse:collapse; font-size:14px; }
+  .bon th { background:#3a3a3a; color:#fff; text-align:left; padding:8px 10px; font-weight:400; }
+  .bon td { padding:9px 10px; border-bottom:1px solid #e6e6e6; }
+  .bon .n { text-align:right; white-space:nowrap; }
+  .bon .tot { margin-top:14px; text-align:right; font-size:15px; }
+  .bon .tot b { font-size:17px; margin-left:16px; }
+  @media (max-width:520px) { .row, .bon .meta { grid-template-columns:1fr; } .bon .title { font-size:18px; width:100%; text-align:left; } .bon { padding:20px 14px; } .bon .head { flex-wrap:wrap; } .bon table { font-size:13px; } .bon th, .bon td { padding:8px 5px; } }
+  @media print {
+    :root { padding:0; } body { background:#fff; } .no-print { display:none !important; }
+    .wrap { width:100%; padding:0; } .bon { border:0; border-radius:0; padding:0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="no-print">
+    <h1>Bon de commande</h1>
+    <p class="sub">Colle le message WhatsApp reçu du client, puis génère le bon.</p>
+    <textarea id="msg" placeholder="Colle ici le message de commande reçu sur WhatsApp"></textarea>
+    <div class="row">
+      <label><span>Numéro du BC</span><input id="num" type="text" placeholder="Ex : commande Bordj El Bahri"></label>
+      <label><span>Date de livraison</span><input id="liv" type="date"></label>
+    </div>
+    <div class="btns">
+      <button type="button" id="go">Générer le bon</button>
+      <button type="button" class="alt" id="print">Télécharger le PDF</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+  </div>
+
+  <div class="bon" id="bon" hidden>
+    <div class="head">
+      <div class="shop"><b>Mes délices d'Allemagne</b><small>Bordj El Bahri, Algérie</small></div>
+      <img class="logo" src="https://i.ibb.co/93W9C0dx/IMG-0028.jpg" alt="">
+      <div class="title">BON DE COMMANDE</div>
+    </div>
+    <div class="meta">
+      <div>
+        <h4>Client</h4>
+        <dl><dt>Nom</dt><dd id="cNom"></dd><dt>Téléphone</dt><dd id="cTel"></dd><dt>Type</dt><dd id="cType"></dd><dt id="aT">Adresse</dt><dd id="cAdr"></dd></dl>
+      </div>
+      <div>
+        <dl><dt>Numéro du BC</dt><dd id="bNum"></dd><dt>Date de la commande</dt><dd id="bDate"></dd><dt>Date de livraison</dt><dd id="bLiv"></dd></dl>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Nom de l'élément</th><th class="n">Qté</th><th class="n">Taux</th><th class="n">Montant</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="tot">Total <b id="total"></b></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function fmtDate(d) { return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }); }
+  function num(s) { return parseInt(String(s).replace(/\s/g, ""), 10) || 0; }
+  function money(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+  function field(text, re) {
+    var m = text.match(re);
+    return m ? m[1].trim().replace(/\s+/g, " ") : "";
+  }
+  function parseItems(text) {
+    var items = [], sum = 0, m;
+    // 1) lignes du site : "- 2 x Roulé Mangue : 400 DA" (montant = total de la ligne)
+    var re = /(\d+)\s*x\s*([^:\n]+?)\s*:\s*([\d\s\u00a0\u202f]+?)\s*DA/gi;
+    while ((m = re.exec(text))) {
+      var q = parseInt(m[1], 10), amount = num(m[3].replace(/[\u00a0\u202f]/g, " "));
+      items.push({ name: m[2].trim(), q: q, rate: Math.round(amount / q), amount: amount });
+      sum += amount;
+    }
+    // 2) lignes ajoutées à la main : "brownie 200da" ou "2 brownie 200da" (prix = prix unitaire)
+    var rest = text.replace(re, " ")
+      .replace(/Bonjour[^\n:]*:/gi, " ")
+      .replace(/Total\s*:\s*[\d\s\u00a0\u202f]+DA/gi, " ")
+      .replace(/Nom\s*:.*?(?=T[ée]l[ée]phone\s*:|$)/gim, " ")
+      .replace(/T[ée]l[ée]phone\s*:\s*[\d\s+().-]+/gi, " ")
+      .replace(/Type\s*:\s*(A emporter|À emporter|Livraison)/gi, " ")
+      .replace(/Adresse\s*:.*$/gim, " ");
+    var re2 = /(?:(\d+)\s*x?\s+)?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' ]*?)\s*[:\-]?\s*(\d[\d\s]*?)\s*(?:da|dzd)\b/gi;
+    while ((m = re2.exec(rest))) {
+      var q2 = m[1] ? parseInt(m[1], 10) : 1, rate = num(m[3]);
+      items.push({ name: m[2].trim().replace(/^./, function (c) { return c.toUpperCase(); }), q: q2, rate: rate, amount: rate * q2 });
+      sum += rate * q2;
+    }
+    return { items: items, sum: sum };
+  }
+  var today = new Date();
+  $("liv").value = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+  $("go").addEventListener("click", function () {
+    var text = $("msg").value, r = parseItems(text), items = r.items, sum = r.sum;
+    if (!items.length) { $("err").textContent = "Aucun produit trouvé. Colle le message complet reçu sur WhatsApp."; return; }
+    $("err").textContent = "";
+    var rows = $("rows"); rows.textContent = "";
+    items.forEach(function (it) {
+      var tr = document.createElement("tr");
+      [it.name, it.q, money(it.rate), money(it.amount)].forEach(function (v, i) {
+        var td = document.createElement("td"); if (i) td.className = "n"; td.textContent = v; tr.appendChild(td);
+      });
+      rows.appendChild(tr);
+    });
+    $("total").textContent = "DZD " + money(sum);
+    $("cNom").textContent = field(text, /Nom\s*:\s*(.+?)(?=\s*T[ée]l[ée]phone\s*:|\s*$)/is) || "-";
+    $("cTel").textContent = field(text, /T[ée]l[ée]phone\s*:\s*(.+?)(?=\s*Type\s*:|\s*$)/is) || "-";
+    $("cType").textContent = field(text, /Type\s*:\s*(A emporter|À emporter|Livraison|\S+)/i) || "-";
+    var adr = field(text, /Adresse\s*:\s*(.+)$/is);
+    $("aT").hidden = $("cAdr").hidden = !adr;
+    $("cAdr").textContent = adr;
+    $("bNum").textContent = $("num").value.trim() || "BC-" + today.toISOString().slice(2, 10).replace(/-/g, "") + "-" + String(today.getHours()).padStart(2, "0") + String(today.getMinutes()).padStart(2, "0");
+    $("bDate").textContent = fmtDate(today);
+    $("bLiv").textContent = $("liv").value ? fmtDate(new Date($("liv").value + "T12:00:00")) : "-";
+    $("bon").hidden = false;
+    $("bon").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  function makePdf(c) {
+    var d = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
+    var L = 18, R = 192, y = 24;
+    d.setFont("helvetica", "bold"); d.setFontSize(15); d.setTextColor(30);
+    d.text("Mes délices d'Allemagne", L, y);
+    d.setFont("helvetica", "normal"); d.setFontSize(10); d.setTextColor(110);
+    d.text("Bordj El Bahri, Algérie", L, y + 6);
+    d.setFontSize(20); d.setTextColor(50); d.text("BON DE COMMANDE", R, y, { align: "right" });
+    y = 48;
+    function kv(x, yy, k, v) {
+      d.setFont("helvetica", "bold"); d.setFontSize(9); d.setTextColor(40); d.text(k, x, yy);
+      d.setFont("helvetica", "normal"); d.setFontSize(10); d.text(String(v), x + 30, yy);
+    }
+    var cl = [["Nom", c.nom], ["Téléphone", c.tel], ["Type", c.type]];
+    if (c.adr) cl.push(["Adresse", c.adr]);
+    cl.forEach(function (r, i) { kv(L, y + i * 7, r[0], r[1]); });
+    kv(110, y, "N° du BC", c.num); kv(110, y + 7, "Commande", c.date); kv(110, y + 14, "Livraison", c.liv);
+    y += Math.max(cl.length, 3) * 7 + 12;
+    function head(yy) {
+      d.setFillColor(58, 58, 58); d.rect(L, yy - 5.5, R - L, 8, "F");
+      d.setTextColor(255); d.setFont("helvetica", "normal"); d.setFontSize(10);
+      d.text("Nom de l'élément", L + 2, yy); d.text("Qté", 128, yy, { align: "right" });
+      d.text("Taux", 156, yy, { align: "right" }); d.text("Montant", R - 2, yy, { align: "right" });
+    }
+    head(y); y += 9;
+    c.items.forEach(function (it) {
+      var lines = d.splitTextToSize(String(it[0]), 90), h = lines.length * 5 + 4;
+      if (y + h > 275) { d.addPage(); y = 24; head(y); y += 9; }
+      d.setTextColor(40); d.setFontSize(10);
+      d.text(lines, L + 2, y);
+      d.text(String(it[1]), 128, y, { align: "right" }); d.text(String(it[2]), 156, y, { align: "right" });
+      d.text(String(it[3]), R - 2, y, { align: "right" });
+      d.setDrawColor(225); d.line(L, y + h - 4, R, y + h - 4);
+      y += h;
+    });
+    if (y > 268) { d.addPage(); y = 24; }
+    y += 8; d.setFont("helvetica", "bold"); d.setFontSize(12); d.setTextColor(30);
+    d.text("Total   " + c.total, R - 2, y, { align: "right" });
+    return d.output("blob");
+  }
+  $("print").addEventListener("click", async function () {
+    if ($("bon").hidden) { $("err").textContent = "Génère d'abord le bon."; return; }
+    $("err").textContent = "";
+    var c = {
+      nom: $("cNom").textContent, tel: $("cTel").textContent, type: $("cType").textContent,
+      adr: $("cAdr").hidden ? "" : $("cAdr").textContent, num: $("bNum").textContent,
+      date: $("bDate").textContent, liv: $("bLiv").textContent, total: $("total").textContent,
+      items: Array.prototype.map.call($("rows").children, function (tr) {
+        return Array.prototype.map.call(tr.children, function (td) { return td.textContent; });
+      })
+    };
+    var name = ("bon-" + (c.nom || "commande") + "-" + c.num).replace(/[^\w\-]+/g, "_") + ".pdf";
+    try {
+      var blob = makePdf(c);
+      var dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+      if (dl) { await dl.save({ filename: name, data: blob }); }
+      else {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+    } catch (e) {
+      if (!e || e.code !== "declined") $("err").textContent = "Impossible de créer le PDF. Réessaie.";
+    }
+  });
+})();
+</script>
+</body>
+</html>
