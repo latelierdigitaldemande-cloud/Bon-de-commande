@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bon de commande - Mes Delices d'Allemagne</title>
+<meta name="robots" content="noindex, nofollow">
 <style>
   :root { --bg:#f6f1ea; --card:#fff; --ink:#1d1511; --muted:#7a6d63; --line:#e4d9cc; --accent:#9c5a28;
     box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
@@ -55,8 +56,8 @@
 <div class="wrap">
   <div class="no-print">
     <h1>Bon de commande</h1>
-    <p class="sub">Colle le message WhatsApp reçu du client, puis génère le bon.</p>
-    <textarea id="msg" placeholder="Colle ici le message de commande reçu sur WhatsApp"></textarea>
+    <p class="sub">Collez le message WhatsApp reçu du client, puis générez le bon.</p>
+    <textarea id="msg" placeholder="Collez ici le message de commande reçu sur WhatsApp"></textarea>
     <div class="row">
       <label><span>Numéro du BC</span><input id="num" type="text" placeholder="Ex : commande Bordj El Bahri"></label>
       <label><span>Date de livraison</span><input id="liv" type="date"></label>
@@ -131,7 +132,7 @@
 
   $("go").addEventListener("click", function () {
     var text = $("msg").value, r = parseItems(text), items = r.items, sum = r.sum;
-    if (!items.length) { $("err").textContent = "Aucun produit trouvé. Colle le message complet reçu sur WhatsApp."; return; }
+    if (!items.length) { $("err").textContent = "Aucun produit trouvé. Collez le message complet reçu sur WhatsApp."; return; }
     $("err").textContent = "";
     var rows = $("rows"); rows.textContent = "";
     items.forEach(function (it) {
@@ -154,6 +155,25 @@
     $("bon").hidden = false;
     $("bon").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+  var LOGO = "https://i.ibb.co/93W9C0dx/IMG-0028.jpg";
+  function loadLogo() {
+    return new Promise(function (res) {
+      var img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = function () {
+        try {
+          var k = Math.min(1, 400 / Math.max(img.naturalWidth, img.naturalHeight));
+          var cv = document.createElement("canvas");
+          cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+          var cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+          cx.drawImage(img, 0, 0, cv.width, cv.height);
+          res({ data: cv.toDataURL("image/jpeg", 0.92), w: cv.width, h: cv.height });
+        } catch (e) { res(null); }
+      };
+      img.onerror = function () { res(null); };
+      img.src = LOGO;
+      setTimeout(function () { res(null); }, 4000);
+    });
+  }
   function makePdf(c) {
     var d = new window.jspdf.jsPDF({ unit: "mm", format: "a4" });
     var L = 18, R = 192, y = 24;
@@ -162,6 +182,10 @@
     d.setFont("helvetica", "normal"); d.setFontSize(10); d.setTextColor(110);
     d.text("Bordj El Bahri, Algérie", L, y + 6);
     d.setFontSize(20); d.setTextColor(50); d.text("BON DE COMMANDE", R, y, { align: "right" });
+    if (c.logo) {
+      var lw = Math.min(20 * c.logo.w / c.logo.h, 30), lh = lw * c.logo.h / c.logo.w;
+      d.addImage(c.logo.data, "JPEG", 95 - lw / 2, 24 - lh / 2 - 2, lw, lh);
+    }
     y = 48;
     function kv(x, yy, k, v) {
       d.setFont("helvetica", "bold"); d.setFontSize(9); d.setTextColor(40); d.text(k, x, yy);
@@ -195,7 +219,7 @@
     return d.output("blob");
   }
   $("print").addEventListener("click", async function () {
-    if ($("bon").hidden) { $("err").textContent = "Génère d'abord le bon."; return; }
+    if ($("bon").hidden) { $("err").textContent = "Générez d'abord le bon."; return; }
     $("err").textContent = "";
     var c = {
       nom: $("cNom").textContent, tel: $("cTel").textContent, type: $("cType").textContent,
@@ -207,6 +231,7 @@
     };
     var name = ("bon-" + (c.nom || "commande") + "-" + c.num).replace(/[^\w\-]+/g, "_") + ".pdf";
     try {
+      c.logo = await loadLogo();
       var blob = makePdf(c);
       var dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
       if (dl) { await dl.save({ filename: name, data: blob }); }
@@ -215,7 +240,7 @@
         document.body.appendChild(a); a.click(); a.remove();
       }
     } catch (e) {
-      if (!e || e.code !== "declined") $("err").textContent = "Impossible de créer le PDF. Réessaie.";
+      if (!e || e.code !== "declined") $("err").textContent = "Impossible de créer le PDF. Réessayez.";
     }
   });
 })();
